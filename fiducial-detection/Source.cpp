@@ -9,7 +9,7 @@
 using namespace cv;
 using namespace std;
 
-int iFiducialType1 = 0,
+int	iFiducialType1 = 0,
 	iFiducialType2 = 0,
 	iFiducialType3 = 0;
 
@@ -30,7 +30,7 @@ static void WindowClickedEvent(int event, int x, int y, int flags, void* userdat
 static bool IsCircularContour(vector<Point> contour) {
 
 	bool	bIsCircular = true;
-	int		iPointCount = contour.size();;
+	int	iPointCount = contour.size();;
 
 	if (!contour.empty()) {
 
@@ -47,7 +47,7 @@ static bool IsCircularContour(vector<Point> contour) {
 static int GetInnermostRectContourIndex
 (vector<vector<Point> > contours, vector<Vec4i> hierarchy, int parent_contour_index) {
 
-	int iFirstInnerRect, 
+	int	iFirstInnerRect, 
 		iSecondInnerRect, 
 		iThirdInnerRect,
 		iInnermostRect = -1;
@@ -74,7 +74,7 @@ static int GetInnermostRectContourIndex
 
 int main(int argc, char** argv)
 {
-	Mat mSrc,
+	Mat	mSrc,
 		mGray,
 		mBin,
 		mEdges;
