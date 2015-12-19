@@ -1,0 +1,265 @@
+#include <opencv2/core.hpp>
+#include <opencv2/core/utility.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/calib3d.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/highgui.hpp>
+#include <iostream>
+#include <cstdlib>
+
+#define _CRT_SECURE_NO_WARNINGS
+#define MIN_DIFFERENCE_TO_BE_CORNER 10
+#define CHESS_SCENE_TO_CALIBRATE 10
+
+using namespace cv;
+using namespace std;
+
+int iFiducialType1 = 0,
+	iFiducialType2 = 0,
+	iFiducialType3 = 0;
+
+static void WindowClickedEvent(int event, int x, int y, int flags, void* userdata) {
+	
+	Mat	image;
+
+	if (event == EVENT_LBUTTONDOWN) {
+
+		image = *(Mat*)userdata;
+		imshow(NULL, image);
+		cout << "Type 1 fiducial: " << iFiducialType1 << endl;
+		cout << "Type 2 fiducial: " << iFiducialType2 << endl;
+		cout << "Type 3 fiducial: " << iFiducialType3 << endl << endl;
+	}
+}
+
+static bool IsCircularContour(vector<Point> contour) {
+
+	bool	bIsCircular = true;
+	int		iPointCount = contour.size();;
+
+	if (!contour.empty()) {
+
+		for (int pi = 0; pi < iPointCount - 1; ++pi)
+			if (abs(contour[pi].x - contour[pi + 1].x) > MIN_DIFFERENCE_TO_BE_CORNER
+				|| abs(contour[pi].y - contour[pi + 1].y) > MIN_DIFFERENCE_TO_BE_CORNER)
+				bIsCircular = false;
+	}
+
+	return bIsCircular;
+}
+
+// Very dangerous to change. Functionality depends on the fudicial we're working on.
+static int GetInnermostRectContourIndex
+(vector<vector<Point> > contours, vector<Vec4i> hierarchy, int parent_contour_index) {
+
+	int iFirstInnerRect, 
+		iSecondInnerRect, 
+		iThirdInnerRect,
+		iInnermostRect = -1;
+
+	if (hierarchy.empty())
+		return iInnermostRect;
+
+	if (hierarchy[parent_contour_index][2] != -1) {
+		iFirstInnerRect = hierarchy[hierarchy[parent_contour_index][2]][2];
+		if (iFirstInnerRect != -1 && hierarchy[iFirstInnerRect][2] != -1) {
+			iSecondInnerRect = hierarchy[hierarchy[iFirstInnerRect][2]][2];
+			if (iSecondInnerRect != -1 && hierarchy[iSecondInnerRect][2] != -1) {
+				iThirdInnerRect = hierarchy[hierarchy[iSecondInnerRect][2]][2];
+				if (iThirdInnerRect != -1 && hierarchy[iThirdInnerRect][2] != -1 
+					&& !IsCircularContour(contours[hierarchy[iThirdInnerRect][2]])) {
+					iInnermostRect = hierarchy[iThirdInnerRect][2];
+				}
+			}
+		}
+	}
+
+	return iInnermostRect;
+}
+
+vector<Point3d> Transform2DContourTo3D(vector<Point> contour) {
+
+	vector<Point3d> v3DPoints;
+
+	if (contour.empty())
+		return vector<Point3d>();
+
+	for (int pi = 0; pi < contour.size(); ++pi) 
+		v3DPoints.push_back(
+			Point3d((double)contour.at(pi).x, (double)contour.at(pi).y, 0.0));
+	
+	return v3DPoints;
+}
+
+int main(int argc, char** argv)
+{
+	Mat mSrc,
+		mGray,
+		mBin,
+		mEdges;
+
+	vector<vector<Point> > vContours;
+	vector<Vec4i> vHierarchy;
+
+	/***** PARAMETERS FOR CAMERA CALIBRATION *****/
+
+	int iIteration = 0,
+		iCornersHor = 8,
+		iCornersVer = 5,
+		numSquares = iCornersHor * iCornersVer;
+
+	Size board_size = Size(iCornersHor, iCornersVer);
+
+	vector<vector<Point3f> > vObjectPoints;
+	vector<vector<Point2f> > vImagePoints;
+	vector<Point2f> vCornerPoints;
+	vector<Point3f> vObj;
+	vector<Mat> vRvecs;
+	vector<Mat> vTvecs;
+	Mat rvec(3, 1, DataType<double>::type);
+	Mat tvec(3, 1, DataType<double>::type);
+	Mat mIntrinsic = Mat(3, 3, CV_64FC1);
+	Mat mDistCoeffs;
+
+	/**************************************************/
+
+	VideoCapture cap(0);
+
+	namedWindow("CAM", CV_WINDOW_AUTOSIZE);
+	namedWindow("CALIBRATION", CV_WINDOW_AUTOSIZE);
+	setMouseCallback("CAM", WindowClickedEvent, &mSrc);
+
+	/*************** CAMERA CALIBRATION ***************/
+
+	for (int i = 0; i < iCornersVer; ++i)
+		for (int j = 0; j < iCornersHor; ++j)
+		// Each point corresponds to a particular vertex (corner)
+		vObj.push_back(Point3f(float(j * numSquares), float(i * numSquares), 0.0));
+
+	while (true)
+	{
+		cap >> mSrc;
+		cvtColor(mSrc, mGray, CV_BGR2GRAY);
+
+		bool bFound = findChessboardCorners
+			(mSrc, board_size, vCornerPoints, 
+				CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+
+		if (bFound)
+		{
+			cornerSubPix(mGray, vCornerPoints, Size(11, 11), Size(-1, -1),
+				TermCriteria(TermCriteria::EPS + TermCriteria::COUNT, 30, 0.1));
+			vImagePoints.push_back(vCornerPoints);
+			vObjectPoints.push_back(vObj);
+			cout << "AAAAAAAAAAAAAAAAAA" << endl << endl;
+			if (++iIteration == CHESS_SCENE_TO_CALIBRATE) {
+				destroyWindow("CALIBRATION");
+				break;
+			}
+		}
+
+		imshow("CALIBRATION", mSrc);
+		waitKey(20);
+	}
+
+	calibrateCamera(vObjectPoints, vImagePoints, mSrc.size(),
+		mIntrinsic, mDistCoeffs, vRvecs, vTvecs);
+	cout << mIntrinsic;
+	solvePnP(vObjectPoints[0], vImagePoints[0], mIntrinsic, mDistCoeffs, rvec, tvec);
+
+	/*************** FUDUCIAL DETECTION ***************/
+
+	while (true) {
+
+		cap >> mSrc;
+
+		cvtColor(mSrc, mGray, CV_BGR2GRAY);
+		threshold(mGray, mBin, 100, 255, 0);
+		GaussianBlur(mBin, mBin, Size(9, 9), 2, 2);
+		Canny(mBin, mEdges, 100, 400);
+
+		// RETR_TREE: Creates a full family hierarchy list.
+		// CV_CHAIN_APPROX_SIMPLE: compresses horizontal, vertical, 
+		// and diagonal segments and leaves only their end points.
+		// CV_CHAIN_APPROX_NONE: stores absolutely all the contour points.
+		// Hierarchy: [Next, Previous, First_Child, Parent]
+		findContours(mEdges.clone(), vContours, vHierarchy, RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
+
+		iFiducialType1 = iFiducialType2 = iFiducialType3 = 0;
+
+		for (int ci = 0; ci < vContours.size(); ++ci)
+		{		
+			// Find the outermost box iff there is no parent.
+			if (vHierarchy[ci][3] == -1) {
+
+				int iInnermostRect = GetInnermostRectContourIndex(vContours, vHierarchy, ci);
+
+				// Check if the current contour is the type of fiducial we're looking for.
+				// iInnermostRect denotes innermost rectangle's index
+				if (iInnermostRect != -1) {
+
+					// Type 1 fiducial - No circles' been detected. (No child as well)
+					if (vHierarchy[iInnermostRect][2] == -1) {
+
+						vector<Point3d> contour3D = Transform2DContourTo3D(vContours[ci]);
+						vector<Point2d> contour2D;
+						projectPoints(contour3D, rvec, tvec, mIntrinsic, mDistCoeffs, contour2D);
+	
+						for (int pi = 0; pi < contour2D.size(); ++pi)
+							line(mSrc, vContours[ci].at(pi), contour2D.at(pi), Scalar(0, 0, 255), 2);
+						for (int pi = 0; pi < contour2D.size() - 1; ++pi)
+							line(mSrc, contour2D.at(pi), contour2D.at(pi + 1), Scalar(0, 0, 255), 2);
+
+						drawContours(mSrc, vContours, ci, Scalar(0, 0, 255), 2);
+						++iFiducialType1;
+					}
+
+					// There are some contours inside the innermost quadrilateral, check if it's a circle
+					else if (IsCircularContour(vContours[vHierarchy[iInnermostRect][2]])) {
+
+						// Type 2 fiducial - only one circle's been detected.
+						// vHierarchy[iInnermostRect][2] denotes circular contour's index
+						if (vHierarchy[vHierarchy[iInnermostRect][2]][0] == -1) {
+
+							vector<Point3d> contour3D = Transform2DContourTo3D(vContours[ci]);
+							vector<Point2d> contour2D;
+							projectPoints(contour3D, rvec, tvec, mIntrinsic, mDistCoeffs, contour2D);
+
+							for (int pi = 0; pi < contour2D.size(); ++pi)
+								line(mSrc, vContours[ci].at(pi), contour2D.at(pi), Scalar(0, 255, 0), 2);
+							for (int pi = 0; pi < contour2D.size() - 1; ++pi)
+								line(mSrc, contour2D.at(pi), contour2D.at(pi + 1), Scalar(0, 255, 0), 2);
+
+							drawContours(mSrc, vContours, ci, Scalar(0, 255, 0), 2);
+							++iFiducialType2;
+						}
+
+						// Type 3 fiducial - Two circles' been detected.
+						// vHierarchy[iInnermostRect][2] and vHierarchy[vHierarchy[iInnermostRect][2]][0] 
+						// denote circular contours' indexes
+						else if (IsCircularContour(vContours[vHierarchy[vHierarchy[iInnermostRect][2]][0]])){
+
+							vector<Point3d> contour3D = Transform2DContourTo3D(vContours[ci]);
+							vector<Point2d> contour2D;
+							projectPoints(contour3D, rvec, tvec, mIntrinsic, mDistCoeffs, contour2D);
+
+							for (int pi = 0; pi < contour2D.size(); ++pi)
+								line(mSrc, vContours[ci].at(pi), contour2D.at(pi), Scalar(255, 0, 0), 2);
+							for (int pi = 0; pi < contour2D.size() - 1; ++pi)
+								line(mSrc, contour2D.at(pi), contour2D.at(pi + 1), Scalar(255, 0, 0), 2);
+
+							drawContours(mSrc, vContours, ci, Scalar(255, 0, 0), 2);
+							++iFiducialType3;
+						}
+					}
+				}
+			}
+		}
+
+		imshow("CAM", mSrc);
+		waitKey(20);
+	}
+
+	return 0;
+}
