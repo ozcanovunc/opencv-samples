@@ -10,7 +10,7 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 #define MIN_DIFFERENCE_TO_BE_CORNER 10
-#define HEIGHT_OF_3D_CONTOUR 0.5
+#define HEIGHT_OF_3D_CONTOUR 0.3
 #define MAX_CHESS_SCENE_FOR_CALIBRATION 10
 
 using namespace cv;
@@ -155,9 +155,7 @@ int main(int argc, char** argv)
 
 	VideoCapture cap(0);
 
-	namedWindow("CAM", CV_WINDOW_AUTOSIZE);
 	namedWindow("CALIBRATION", CV_WINDOW_AUTOSIZE);
-	setMouseCallback("CAM", WindowClickedEvent, &mSrc);
 
 	vContourCorners.push_back(Point3d(0.0, 1.0, 0.0));
 	vContourCorners.push_back(Point3d(1.0, 1.0, 0.0));
@@ -211,6 +209,9 @@ int main(int argc, char** argv)
 	cout << endl << "K MATRIX" << endl << endl << mIntrinsic << endl;
 
 	/************************* FIDUCIAL DETECTION *************************/
+
+	namedWindow("CAM", CV_WINDOW_AUTOSIZE);
+	setMouseCallback("CAM", WindowClickedEvent, &mSrc);
 
 	while (true) {
 
