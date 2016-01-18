@@ -1,4 +1,4 @@
-## Opencv Samples
+## OpenCV Samples
 
 #### Fiducial Detection
 
