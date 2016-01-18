@@ -37,8 +37,9 @@ void filter_rects(const std::vector<cv::Rect>& candidates, std::vector<cv::Rect>
 			if (j != i && (r & candidates[j]) == r)
 				break;
 
-		if (j == candidates.size())
+		if (j == candidates.size()) {			
 			objects.push_back(r);
+		}
 	}
 }
 
@@ -139,7 +140,7 @@ int main() {
 		vFound.clear();
 		vFiltered.clear();
 
-		hog.detectMultiScale(mProcessedTraffic, vFound, 0, Size(8, 8), Size(32, 32), 1.05, 2);
+		hog.detectMultiScale(mProcessedTraffic, vFound, 0, Size(0, 0), Size(2, 2), 1.05, 2);
 		filter_rects(vFound, vFiltered);
 		draw_locations(mRawTraffic, vFiltered, Scalar(0,255,0));
 
