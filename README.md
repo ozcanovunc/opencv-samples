@@ -16,3 +16,8 @@
 
 - Training images are extracted from [here](https://www.youtube.com/watch?v=PNCJQkvALVc).
 - Classification and feature vector files couldn't be uploaded because they were containing too much data.
+
+#### ► Vehicle Detection (with Haar Cascades)
+
+- The trained Haar classifier is based on cars3.xml created by Brad Philip and Paul Updike.
+- Video available [here](https://www.youtube.com/watch?v=PhndtzWhhBY).
