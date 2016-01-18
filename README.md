@@ -1,13 +1,18 @@
-## opencv samples
+## Opencv Samples
 
-#### fiducial-detection
+#### Fiducial Detection
 
-![alt tag](https://github.com/ozcanovunc/opencv/blob/master/results/fiducial-detection00.jpg)
+<img src="https://github.com/ozcanovunc/opencv/blob/master/results/fiducial-detection00.jpg" width="300">
 
-#### 3d-pose-estimation
+#### 3D Pose Estimation
 
-![alt tag](https://github.com/ozcanovunc/opencv/blob/master/results/3d-pose-estimation00.jpg)
+<img src="https://github.com/ozcanovunc/opencv/blob/master/results/3d-pose-estimation00.jpg" width="300">
 
-![alt tag](https://github.com/ozcanovunc/opencv/blob/master/results/3d-pose-estimation01.jpg)
+<img src="https://github.com/ozcanovunc/opencv/blob/master/results/3d-pose-estimation01.jpg" width="300">
 
-#### pedestrian-detection
+#### Pedestrian Detection
+
+#### Vehicle Detection (with ML)
+
+- Training images are extracted from [here](https://www.youtube.com/watch?v=PNCJQkvALVc).
+- Classification and feature vector files couldn't be uploaded because they were containing too much data.
