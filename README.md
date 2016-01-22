@@ -12,7 +12,7 @@
 
 #### 	► Pedestrian Detection
 
-#### 	► Vehicle Detection (with ML)
+#### 	► Vehicle Detection (with SVMLight)
 
 - Training images are extracted from [here](https://www.youtube.com/watch?v=PNCJQkvALVc).
 - Classification and feature vector files couldn't be uploaded because they were containing too much data.
