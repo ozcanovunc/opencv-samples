@@ -1,9 +1,0 @@
-﻿  Source.cpp
-C:\Users\ozcan\Documents\Visual Studio 2015\Projects\SVMLight\SVMLight\SvmLightLib.h(19): warning C4091: 'extern ': ignored on left of 'SVMLight::SVMTrainer' when no variable is declared
-C:\Users\ozcan\Documents\Visual Studio 2015\Projects\SVMLight\SVMLight\SvmLightLib.h(26): warning C4091: 'extern ': ignored on left of 'SVMLight::SVMClassifier' when no variable is declared
-  Generating code
-  93 of 692 functions (13.4%) were compiled, the rest were copied from previous compilation.
-    3 functions were new in current compilation
-    10 functions had inline decision re-evaluated but remain unchanged
-  Finished generating code
-  vehicle-detection.vcxproj -> C:\Users\ozcan\Documents\Visual Studio 2015\Projects\vehicle-detection\x64\Release\vehicle-detection.exe
