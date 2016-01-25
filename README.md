@@ -21,3 +21,8 @@
 
 - The trained Haar classifier is based on cars3.xml created by Brad Philip and Paul Updike.
 - Video available [here](https://www.youtube.com/watch?v=PhndtzWhhBY).
+
+#### ► Vehicle Detection (with HOG)
+
+- Video available [here]().
+
