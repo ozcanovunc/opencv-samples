@@ -13,7 +13,7 @@
 #define CLASSIFIER_FILE "classifier.dat"
 #define FEATURE_VECTORS_FILE "features.dat"
 #define WINDOW_NAME "WINDOW"
-#define TRAFFIC_VIDEO__FILE "traffic.avi"
+#define TRAFFIC_VIDEO_FILE "traffic.avi"
 
 using namespace std; 
 using namespace cv;
@@ -120,7 +120,7 @@ int main() {
 	vector<float> vDescriptor = classifier.getDescriptorVector();
 	hog.setSVMDetector(vDescriptor);
 
-	VideoCapture cap(TRAFFIC_VIDEO__FILE);
+	VideoCapture cap(TRAFFIC_VIDEO_FILE);
 
 	while (true) {
 
