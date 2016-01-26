@@ -3,24 +3,108 @@
 #include <vector>
 #include <ctime>
 
+// includes for FileExists function
+#ifndef __linux
+#include <io.h> 
+#define access _access_s
+#else
+#include <unistd.h>
+#endif
+
 #define POSITIVE_TRAINING_SET_PATH "DATASET\\POSITIVE\\"
 #define NEGATIVE_TRAINING_SET_PATH "DATASET\\NEGATIVE\\"
 #define WINDOW_NAME "WINDOW"
 #define TRAFFIC_VIDEO_FILE "video.mp4"
+#define TRAINED_SVM "my_car_detector.yml"
+#define	IMAGE_SIZE Size(40, 40) 
 
 using namespace cv;
 using namespace cv::ml;
 using namespace std;
 
+// Reference: http://stackoverflow.com/questions/12774207/fastest-way-to-check-if-a-file-exist-using-standard-c-c11-c
+bool FileExists(const std::string &Filename);
+
+void load_images(string directory, vector<Mat>& image_list);
+vector<string> GetFilePathsInDirectory(string directory);
+
 void get_svm_detector(const Ptr<SVM>& svm, vector< float > & hog_detector);
 void convert_to_ml(const std::vector< cv::Mat > & train_samples, cv::Mat& trainData);
-void load_images(const string & prefix, const string & filename, vector< Mat > & img_lst);
 void sample_neg(const vector< Mat > & full_neg_lst, vector< Mat > & neg_lst, const Size & size);
 Mat get_hogdescriptor_visu(const Mat& color_origImg, vector<float>& descriptorValues, const Size & size);
 void compute_hog(const vector< Mat > & img_lst, vector< Mat > & gradient_lst, const Size & size);
 void train_svm(const vector< Mat > & gradient_lst, const vector< int > & labels);
 void draw_locations(Mat & img, const vector< Rect > & locations, const Scalar & color);
 void test_it(const Size & size);
+
+int main(int argc, char** argv)
+{
+	if (!FileExists(TRAINED_SVM)) {
+
+		vector< Mat > pos_lst;
+		vector< Mat > full_neg_lst;
+		vector< Mat > neg_lst;
+		vector< Mat > gradient_lst;
+		vector< int > labels;
+
+		load_images(POSITIVE_TRAINING_SET_PATH, pos_lst);
+		labels.assign(pos_lst.size(), +1);
+		const unsigned int old = (unsigned int)labels.size();
+		load_images(NEGATIVE_TRAINING_SET_PATH, full_neg_lst);
+
+		labels.insert(labels.end(), full_neg_lst.size(), -1);
+		CV_Assert(old < labels.size());
+
+		compute_hog(pos_lst, gradient_lst, IMAGE_SIZE);
+		compute_hog(full_neg_lst, gradient_lst, IMAGE_SIZE);
+
+		train_svm(gradient_lst, labels);
+	}
+
+	test_it(IMAGE_SIZE);
+	return 0;
+}
+
+bool FileExists(const std::string &Filename)
+{
+	return access(Filename.c_str(), 0) == 0;
+}
+
+vector<string> GetFilePathsInDirectory(string directory)
+{
+	vector<string> vFiles;
+	FILE* pipe = NULL;
+	string full_path = "dir /B /S " + directory;
+	char buf[256];
+
+	if (pipe = _popen(full_path.c_str(), "rt"))
+		while (!feof(pipe))
+			if (fgets(buf, 256, pipe) != NULL) {
+				buf[strlen(buf) - 1] = '\0';
+				vFiles.push_back(string(buf));
+			}
+
+	_pclose(pipe);
+	return vFiles;
+}
+
+void load_images(string directory, vector<Mat>& image_list) {
+
+	Mat mImg;
+	vector<string> vFiles;
+	vFiles = GetFilePathsInDirectory(directory);
+
+	for each (string file in vFiles) {
+
+		mImg = imread(file);
+
+		if (mImg.empty())
+			continue;
+
+		resize(mImg, mImg, IMAGE_SIZE);
+		image_list.push_back(mImg.clone());
+	}
+}
 
 void get_svm_detector(const Ptr<SVM>& svm, vector< float > & hog_detector)
 {
@@ -69,39 +153,6 @@ void convert_to_ml(const std::vector< cv::Mat > & train_samples, cv::Mat& trainD
 		{
 			itr->copyTo(trainData.row(i));
 		}
-	}
-}
-
-void load_images(const string & prefix, const string & filename, vector< Mat > & img_lst)
-{
-	string line;
-	ifstream file;
-
-	file.open((prefix + filename).c_str());
-	if (!file.is_open())
-	{
-		cerr << "Unable to open the list of images from " << filename << " filename." << endl;
-		exit(-1);
-	}
-
-	bool end_of_parsing = false;
-	while (!end_of_parsing)
-	{
-		getline(file, line);
-		if (line == "") // no more file to read
-		{
-			end_of_parsing = true;
-			break;
-		}
-		Mat img = imread((prefix + line).c_str()); // load the image
-		if (img.empty()) // invalid image, just skip it.
-			continue;
-		resize(img, img, Size(40, 40));
-#ifdef _DEBUG
-		imshow("image", img);
-		waitKey(10);
-#endif
-		img_lst.push_back(img.clone());
 	}
 }
 
@@ -333,7 +384,7 @@ void train_svm(const vector< Mat > & gradient_lst, const vector< int > & labels)
 	svm->train(train_data, ROW_SAMPLE, Mat(labels));
 	clog << "...[done]" << endl;
 
-	svm->save("my_car_detector.yml");
+	svm->save(TRAINED_SVM);
 }
 
 void draw_locations(Mat & img, const vector< Rect > & locations, const Scalar & color)
@@ -352,21 +403,19 @@ void draw_locations(Mat & img, const vector< Rect > & locations, const Scalar & 
 void test_it(const Size & size)
 {
 	char key = 27;
-	Scalar reference(0, 255, 0);
-	Scalar trained(0, 0, 255);
 	Mat img, draw;
 	Ptr<SVM> svm;
-	HOGDescriptor my_hog;
-	my_hog.winSize = size;
+	HOGDescriptor hog;
+	hog.winSize = size;
 	VideoCapture video;
 	vector< Rect > locations;
 
 	// Load the trained SVM.
-	svm = StatModel::load<SVM>("my_car_detector.yml");
+	svm = StatModel::load<SVM>(TRAINED_SVM);
 	// Set the trained svm to my_hog
 	vector< float > hog_detector;
 	get_svm_detector(svm, hog_detector);
-	my_hog.setSVMDetector(hog_detector);
+	hog.setSVMDetector(hog_detector);
 
 	// Open the camera.
 	video.open(TRAFFIC_VIDEO_FILE);
@@ -375,6 +424,8 @@ void test_it(const Size & size)
 		cerr << "Unable to open the device" << endl;
 		exit(-1);
 	}
+
+	int num_of_vehicles = 0;
 
 	bool end_of_process = false;
 	while (!end_of_process)
@@ -385,39 +436,40 @@ void test_it(const Size & size)
 
 		draw = img.clone();
 
-		locations.clear();
-		my_hog.detectMultiScale(img, locations);
-		draw_locations(draw, locations, trained);
+		// Eliminate ingoing traffic
+		for (int pi = 0; pi < img.rows; ++pi)
+			for (int pj = 0; pj < img.cols; ++pj)
+				if (pj > img.cols / 2) {
+					img.at<Vec3b>(pi, pj)[0] = 0;
+					img.at<Vec3b>(pi, pj)[1] = 0;
+					img.at<Vec3b>(pi, pj)[2] = 0;
+				}
 
-		imshow("Video", draw);
+		locations.clear();
+		hog.detectMultiScale(img, locations);
+		draw_locations(draw, locations, Scalar(0, 255, 0));
+		
+		for each(Rect r in locations) {
+
+			// Center point of the vehicle
+			Point center(r.x + r.width / 2, r.y + r.height / 2);
+			
+			if (abs(center.y - img.rows * 2 / 3) < 2) {
+				++num_of_vehicles;
+				line(draw, Point(0, img.rows * 2 / 3), Point(img.cols / 2, img.rows * 2 / 3), Scalar(0, 255, 0), 3);
+				imshow(WINDOW_NAME, draw);
+				waitKey(50);
+			}
+			else
+				line(draw, Point(0, img.rows * 2 / 3), Point(img.cols / 2, img.rows * 2 / 3), Scalar(0, 0, 255), 3);
+
+		}
+
+		//putText(draw, "Detected vehicles: " + to_string(num_of_vehicles), Point(50, 50), 1, 1, Scalar(0, 0, 255), 2);
+			
+		imshow(WINDOW_NAME, draw);
 		key = (char)waitKey(10);
 		if (27 == key)
 			end_of_process = true;
 	}
-}
-
-int main(int argc, char** argv)
-{
-	vector< Mat > pos_lst;
-	vector< Mat > full_neg_lst;
-	vector< Mat > neg_lst;
-	vector< Mat > gradient_lst;
-	vector< int > labels;
-
-	load_images("POSITIVE_SET/", "../positive.lst", pos_lst);
-	labels.assign(pos_lst.size(), +1);
-	const unsigned int old = (unsigned int)labels.size();
-	load_images("NEGATIVE_SET/", "../negative.lst", full_neg_lst);
-
-	labels.insert(labels.end(), full_neg_lst.size(), -1);
-	CV_Assert(old < labels.size());
-
-	compute_hog(pos_lst, gradient_lst, Size(40, 40));
-	compute_hog(full_neg_lst, gradient_lst, Size(40, 40));
-
-	train_svm(gradient_lst, labels);
-
-	test_it(Size(40, 40));
-
-	return 0;
 }
