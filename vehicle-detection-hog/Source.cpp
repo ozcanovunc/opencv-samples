@@ -1,32 +1,33 @@
 #include <opencv2/opencv.hpp>
-#include <fstream>
+#include <iostream>
 #include <vector>
+#include <string>
+#include <fstream>
 #include <ctime>
 
-// includes for FileExists function
+// includes for file_exists and files_in_directory functions
 #ifndef __linux
 #include <io.h> 
 #define access _access_s
 #else
 #include <unistd.h>
+#include <memory>
 #endif
 
 #define POSITIVE_TRAINING_SET_PATH "DATASET\\POSITIVE\\"
 #define NEGATIVE_TRAINING_SET_PATH "DATASET\\NEGATIVE\\"
 #define WINDOW_NAME "WINDOW"
 #define TRAFFIC_VIDEO_FILE "video.mp4"
-#define TRAINED_SVM "my_car_detector.yml"
+#define TRAINED_SVM "vehicle_detector.yml"
 #define	IMAGE_SIZE Size(40, 40) 
 
 using namespace cv;
 using namespace cv::ml;
 using namespace std;
 
-// Reference: http://stackoverflow.com/questions/12774207/fastest-way-to-check-if-a-file-exist-using-standard-c-c11-c
-bool FileExists(const std::string &Filename);
-
+bool file_exists(const string &file);
 void load_images(string directory, vector<Mat>& image_list);
-vector<string> GetFilePathsInDirectory(string directory);
+vector<string> files_in_directory(string directory);
 
 void get_svm_detector(const Ptr<SVM>& svm, vector< float > & hog_detector);
 void convert_to_ml(const std::vector< cv::Mat > & train_samples, cv::Mat& trainData);
@@ -39,7 +40,7 @@ void test_it(const Size & size);
 
 int main(int argc, char** argv)
 {
-	if (!FileExists(TRAINED_SVM)) {
+	if (!file_exists(TRAINED_SVM)) {
 
 		vector< Mat > pos_lst;
 		vector< Mat > full_neg_lst;
@@ -65,44 +66,66 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-bool FileExists(const std::string &Filename)
+bool file_exists(const string &file)
 {
-	return access(Filename.c_str(), 0) == 0;
+	return access(file.c_str(), 0) == 0;
 }
 
-vector<string> GetFilePathsInDirectory(string directory)
+vector<string> files_in_directory(string directory)
 {
-	vector<string> vFiles;
-	FILE* pipe = NULL;
-	string full_path = "dir /B /S " + directory;
+	vector<string> files;
 	char buf[256];
+	string command;
 
-	if (pipe = _popen(full_path.c_str(), "rt"))
+#ifdef __linux__ 
+	command = "ls " + directory;
+	shared_ptr<FILE> pipe(popen(command.c_str(), "r"), pclose);
+
+	char cwd[256];
+	getcwd(cwd, sizeof(cwd));
+
+	while (!feof(pipe.get()))
+		if (fgets(buf, 256, pipe.get()) != NULL) {
+			string file(cwd);
+			file.append("/");
+			file.append(buf);
+			file.pop_back();
+			files.push_back(file);
+		}
+#else
+	command = "dir /b /s " + directory;
+	FILE* pipe = NULL;
+
+	if (pipe = _popen(command.c_str(), "rt"))
 		while (!feof(pipe))
 			if (fgets(buf, 256, pipe) != NULL) {
-				buf[strlen(buf) - 1] = '\0';
-				vFiles.push_back(string(buf));
+				string file(buf);
+				file.pop_back();
+				files.push_back(file);
 			}
-
 	_pclose(pipe);
-	return vFiles;
+#endif
+
+	return files;
 }
 
 void load_images(string directory, vector<Mat>& image_list) {
 
-	Mat mImg;
-	vector<string> vFiles;
-	vFiles = GetFilePathsInDirectory(directory);
+	Mat img;
+	vector<string> files;
+	files = files_in_directory(directory);
 
-	for each (string file in vFiles) {
+	for (int i = 0; i < files.size(); ++i) {
 
-		mImg = imread(file);
-
-		if (mImg.empty())
+		img = imread(files.at(i));
+		if (img.empty())
 			continue;
-
-		resize(mImg, mImg, IMAGE_SIZE);
-		image_list.push_back(mImg.clone());
+#ifdef _DEBUG
+		imshow("image", img);
+		waitKey(10);
+#endif
+		resize(img, img, IMAGE_SIZE);
+		image_list.push_back(img.clone());
 	}
 }
 
@@ -193,7 +216,7 @@ Mat get_hogdescriptor_visu(const Mat& color_origImg, vector<float>& descriptorVa
 
 	int cellSize = 8;
 	int gradientBinSize = 9;
-	float radRangeForOneBin = (float)(CV_PI / (float)gradientBinSize); // dividing 180° into 9 bins, how large (in rad) is one bin?
+	float radRangeForOneBin = (float)(CV_PI / (float)gradientBinSize); // dividing 180Â° into 9 bins, how large (in rad) is one bin?
 
 																	   // prepare data structure: 9 orientation / gradient strenghts for each cell
 	int cells_in_x_dir = DIMX / cellSize;
