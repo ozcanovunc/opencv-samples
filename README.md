@@ -24,5 +24,5 @@
 
 #### ► Vehicle Detection (with HOG)
 
-- Video available [here]().
+- Video available [here](https://youtu.be/kWjSz0JImwg).
 
