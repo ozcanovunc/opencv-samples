@@ -12,6 +12,9 @@
 
 #### 	► Pedestrian Detection
 
+- OpenCV's default people detector has been used.
+- Video available [here]().
+
 #### 	► Vehicle Detection (with SVMLight)
 
 - Training images are extracted from [here](https://www.youtube.com/watch?v=PNCJQkvALVc).
@@ -25,4 +28,3 @@
 #### ► Vehicle Detection (with HOG)
 
 - Video available [here](https://youtu.be/kWjSz0JImwg).
-
