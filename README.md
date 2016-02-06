@@ -13,7 +13,6 @@
 #### 	► Pedestrian Detection
 
 - OpenCV's default people detector has been used.
-- Video available [here]().
 
 #### 	► Vehicle Detection (with SVMLight)
 
