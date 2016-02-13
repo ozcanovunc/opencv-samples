@@ -50,11 +50,9 @@ int main(int argc, char** argv)
 
 		load_images(POSITIVE_TRAINING_SET_PATH, pos_lst);
 		labels.assign(pos_lst.size(), +1);
-		const unsigned int old = (unsigned int)labels.size();
+		
 		load_images(NEGATIVE_TRAINING_SET_PATH, full_neg_lst);
-
 		labels.insert(labels.end(), full_neg_lst.size(), -1);
-		CV_Assert(old < labels.size());
 
 		compute_hog(pos_lst, gradient_lst, IMAGE_SIZE);
 		compute_hog(full_neg_lst, gradient_lst, IMAGE_SIZE);
