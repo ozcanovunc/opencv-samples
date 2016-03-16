@@ -1,12 +1,5 @@
-#include <opencv2/core.hpp>
-#include <opencv2/core/utility.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/videoio.hpp>
-#include <opencv2/highgui.hpp>
+#include <opencv2\opencv.hpp>
 #include <iostream>
-#include <stdlib.h>
 
 #define _CRT_SECURE_NO_WARNINGS
 #define MIN_DIFFERENCE_TO_BE_CORNER 10
@@ -21,13 +14,13 @@ int	iFiducialType1 = 0,
 	iFiducialType3 = 0;
 
 static void WindowClickedEvent(int event, int x, int y, int flags, void* userdata) {
-	
+
 	Mat	image;
 
 	if (event == EVENT_LBUTTONDOWN) {
 
 		image = *(Mat*)userdata;
-		imshow(NULL, image);
+		imshow("", image);
 		cout << "Type 1 fiducial: " << iFiducialType1 << endl;
 		cout << "Type 2 fiducial: " << iFiducialType2 << endl;
 		cout << "Type 3 fiducial: " << iFiducialType3 << endl << endl;
@@ -54,8 +47,8 @@ static bool IsCircularContour(vector<Point> contour) {
 static int GetInnermostRectContourIndex
 (vector<vector<Point> > contours, vector<Vec4i> hierarchy, int parent_contour_index) {
 
-	int	iFirstInnerRect, 
-		iSecondInnerRect, 
+	int	iFirstInnerRect,
+		iSecondInnerRect,
 		iThirdInnerRect,
 		iInnermostRect = -1;
 
@@ -68,7 +61,7 @@ static int GetInnermostRectContourIndex
 			iSecondInnerRect = hierarchy[hierarchy[iFirstInnerRect][2]][2];
 			if (iSecondInnerRect != -1 && hierarchy[iSecondInnerRect][2] != -1) {
 				iThirdInnerRect = hierarchy[hierarchy[iSecondInnerRect][2]][2];
-				if (iThirdInnerRect != -1 && hierarchy[iThirdInnerRect][2] != -1 
+				if (iThirdInnerRect != -1 && hierarchy[iThirdInnerRect][2] != -1
 					&& !IsCircularContour(contours[hierarchy[iThirdInnerRect][2]])) {
 					iInnermostRect = hierarchy[iThirdInnerRect][2];
 				}
@@ -203,7 +196,7 @@ int main(int argc, char** argv)
 		waitKey(20);
 	}
 
-	calibrateCamera(vObjectPoints, vImagePoints, mSrc.size(), 
+	calibrateCamera(vObjectPoints, vImagePoints, mSrc.size(),
 		mIntrinsic, mDistortion, vRvecs, vTvecs);
 
 	cout << endl << "K MATRIX" << endl << endl << mIntrinsic << endl;
@@ -232,7 +225,7 @@ int main(int argc, char** argv)
 		iFiducialType1 = iFiducialType2 = iFiducialType3 = 0;
 
 		for (int ci = 0; ci < vContours.size(); ++ci)
-		{		
+		{
 			// Find the outermost box iff there is no parent.
 			if (vHierarchy[ci][3] == -1) {
 
@@ -264,7 +257,7 @@ int main(int argc, char** argv)
 
 							solvePnP(vContourCorners, GetCornerPointsOfContour(
 								vContours[ci]), mIntrinsic, mDistortion, rvec, tvec, false);
-							projectPoints(v3DContourCorners, rvec, tvec, mIntrinsic, 
+							projectPoints(v3DContourCorners, rvec, tvec, mIntrinsic,
 								mDistortion, vProjectedCorners);
 							DrawCubeBetweenContours(mSrc, GetCornerPointsOfContour(
 								vContours[ci]), vProjectedCorners, Scalar(0, 255, 0), 2);
@@ -275,11 +268,11 @@ int main(int argc, char** argv)
 						// vHierarchy[iInnermostRect][2] and vHierarchy[vHierarchy[iInnermostRect][2]][0] 
 						// denote circular contours' indexes
 						else if (IsCircularContour(
-							vContours[vHierarchy[vHierarchy[iInnermostRect][2]][0]])){
+							vContours[vHierarchy[vHierarchy[iInnermostRect][2]][0]])) {
 
 							solvePnP(vContourCorners, GetCornerPointsOfContour(
 								vContours[ci]), mIntrinsic, mDistortion, rvec, tvec, false);
-							projectPoints(v3DContourCorners, rvec, tvec, mIntrinsic, 
+							projectPoints(v3DContourCorners, rvec, tvec, mIntrinsic,
 								mDistortion, vProjectedCorners);
 							DrawCubeBetweenContours(mSrc, GetCornerPointsOfContour(
 								vContours[ci]), vProjectedCorners, Scalar(255, 0, 0), 2);
