@@ -1,26 +1,25 @@
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
+#include <opencv2\opencv.hpp>
 #include <iostream>
-#include <stdlib.h>
 
 #define _CRT_SECURE_NO_WARNINGS
 #define MIN_DIFFERENCE_TO_BE_CORNER 10
+#define WINDOW_NAME "CAM"
 
 using namespace cv;
 using namespace std;
 
 int	iFiducialType1 = 0,
-	iFiducialType2 = 0,
-	iFiducialType3 = 0;
+iFiducialType2 = 0,
+iFiducialType3 = 0;
 
 static void WindowClickedEvent(int event, int x, int y, int flags, void* userdata) {
-	
+
 	Mat	image;
 
 	if (event == EVENT_LBUTTONDOWN) {
 
 		image = *(Mat*)userdata;
-		imshow(NULL, image);
+		imshow("", image);
 		cout << "Type 1 fiducial: " << iFiducialType1 << endl;
 		cout << "Type 2 fiducial: " << iFiducialType2 << endl;
 		cout << "Type 3 fiducial: " << iFiducialType3 << endl << endl;
@@ -47,8 +46,8 @@ static bool IsCircularContour(vector<Point> contour) {
 static int GetInnermostRectContourIndex
 (vector<vector<Point> > contours, vector<Vec4i> hierarchy, int parent_contour_index) {
 
-	int	iFirstInnerRect, 
-		iSecondInnerRect, 
+	int	iFirstInnerRect,
+		iSecondInnerRect,
 		iThirdInnerRect,
 		iInnermostRect = -1;
 
@@ -61,7 +60,7 @@ static int GetInnermostRectContourIndex
 			iSecondInnerRect = hierarchy[hierarchy[iFirstInnerRect][2]][2];
 			if (iSecondInnerRect != -1 && hierarchy[iSecondInnerRect][2] != -1) {
 				iThirdInnerRect = hierarchy[hierarchy[iSecondInnerRect][2]][2];
-				if (iThirdInnerRect != -1 && hierarchy[iThirdInnerRect][2] != -1 
+				if (iThirdInnerRect != -1 && hierarchy[iThirdInnerRect][2] != -1
 					&& !IsCircularContour(contours[hierarchy[iThirdInnerRect][2]])) {
 					iInnermostRect = hierarchy[iThirdInnerRect][2];
 				}
@@ -106,7 +105,7 @@ int main(int argc, char** argv)
 		iFiducialType1 = iFiducialType2 = iFiducialType3 = 0;
 
 		for (int ci = 0; ci < vContours.size(); ++ci)
-		{		
+		{
 			// Find the outermost box iff there is no parent.
 			if (vHierarchy[ci][3] == -1) {
 
@@ -135,7 +134,7 @@ int main(int argc, char** argv)
 						// Type 3 fiducial - Two circles' been detected.
 						// vHierarchy[iInnermostRect][2] and vHierarchy[vHierarchy[iInnermostRect][2]][0] 
 						// denote circular contours' indexes
-						else if (IsCircularContour(vContours[vHierarchy[vHierarchy[iInnermostRect][2]][0]])){
+						else if (IsCircularContour(vContours[vHierarchy[vHierarchy[iInnermostRect][2]][0]])) {
 							drawContours(mSrc, vContours, ci, Scalar(255, 0, 0), 2);
 							++iFiducialType3;
 						}
@@ -144,7 +143,7 @@ int main(int argc, char** argv)
 			}
 		}
 
-		imshow("CAM", mSrc);
+		imshow(WINDOW_NAME, mSrc);
 		waitKey(20);
 	}
 
