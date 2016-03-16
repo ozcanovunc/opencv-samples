@@ -9,8 +9,8 @@ using namespace cv;
 using namespace std;
 
 int	iFiducialType1 = 0,
-iFiducialType2 = 0,
-iFiducialType3 = 0;
+	iFiducialType2 = 0,
+	iFiducialType3 = 0;
 
 static void WindowClickedEvent(int event, int x, int y, int flags, void* userdata) {
 
